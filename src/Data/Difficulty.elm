@@ -1,4 +1,4 @@
-module Data.Difficulty exposing (Difficulty, default)
+module Data.Difficulty exposing (Difficulty, default, get, keys)
 
 
 type Difficulty
@@ -20,3 +20,19 @@ list =
     , ( "Medium", Medium )
     , ( "Hard", Hard )
     ]
+
+
+keys : List String
+keys =
+    list
+        |> List.unzip
+        |> Tuple.first
+
+
+get : String -> Difficulty
+get key =
+    list
+        |> List.filter (\( k, v ) -> k == key)
+        |> List.head
+        |> Maybe.map Tuple.second
+        |> Maybe.withDefault default

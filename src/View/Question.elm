@@ -6,8 +6,8 @@ import View.Button exposing (btn)
 import View.Form exposing (group)
 
 
-view : Question -> Html msg
-view { question, correct, incorrect } =
+view : (String -> msg) -> Question -> Html msg
+view msg { question, correct, incorrect } =
     let
         answers =
             List.sort (correct :: incorrect)
@@ -16,7 +16,7 @@ view { question, correct, incorrect } =
         []
         [ View.Form.group [ text question ]
         , answers
-            |> List.map View.Button.btn
+            |> List.map (\a -> View.Button.btn (msg a) a)
             |> List.intersperse (text " ")
             |> View.Form.group
         ]
