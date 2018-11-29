@@ -6,12 +6,21 @@ import Data.Difficulty exposing (Difficulty, default)
 import Data.Question exposing (Question)
 import Html exposing (Html, div, h1, img, input, option, select, text)
 import Html.Attributes exposing (src, value)
-import Util exposing (onChange)
+import Http exposing (Error)
+import Json.Decode exposing (Value)
+import Request.Helpers exposing (queryString)
+import Request.TriviaQuestions
+import Util exposing (appendIf, onChange)
+import View.Button
 import View.Question exposing (view)
 
 
 
 ---- MODEL ----
+
+
+type alias Flags =
+    Int
 
 
 type alias Model =
@@ -21,24 +30,14 @@ type alias Model =
     }
 
 
-init : Model
-init =
-    Model
-        5
+init : Flags -> ( Model, Cmd Msg )
+init flgs =
+    ( Model
+        flgs
         Data.Difficulty.default
-        (Array.fromList
-            [ Question
-                (Just "To get to the other sides")
-                "Why did the chicken cross the road?"
-                "Keith Sucks"
-                [ "Keith Doesn't Suck", "Keith Might Suck" ]
-            , Question
-                (Just "To get to the other sides")
-                "Why did the chicken cross the road?"
-                "Keith Sucks"
-                [ "Keith Doesn't Suck", "Keith Might Suck" ]
-            ]
-        )
+        Array.empty
+    , Cmd.none
+    )
 
 
 
@@ -59,6 +58,7 @@ view { amount, questions } =
             (List.map (\key -> option [] [ text key ])
                 Data.Difficulty.keys
             )
+        , View.Button.btn Start "Start"
         , div
             []
             (questions
@@ -76,44 +76,65 @@ type Msg
     = Answer Int String
     | UpdateAmount String
     | ChangeDifficulty Difficulty
+    | Start
+    | GetQuestions (Result Error Value)
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Answer i val ->
-            model.questions
+            ( model.questions
                 |> Array.get i
                 |> Maybe.map (\q -> { q | userAnswer = Just val })
                 |> Maybe.map (\q -> Array.set i q model.questions)
                 |> Maybe.map (\arr -> { model | questions = arr })
                 |> Maybe.withDefault model
+            , Cmd.none
+            )
 
         UpdateAmount str ->
             Maybe.withDefault 0 (String.toInt str)
                 |> (\val ->
                         if val > 50 then
-                            { model | amount = 50 }
+                            ( { model | amount = 50 }
+                            , Cmd.none
+                            )
 
                         else
-                            { model | amount = val }
+                            ( { model | amount = val }
+                            , Cmd.none
+                            )
                    )
 
         ChangeDifficulty lvl ->
-            { model | difficulty = lvl }
+            ( { model | difficulty = lvl }
+            , Cmd.none
+            )
+
+        Start ->
+            let
+                difficultyValue =
+                    model.difficulty
+                        |> Data.Difficulty.toString
+                        |> String.toLower
+
+                flag =
+                    Data.Difficulty.isAny model.difficulty
+            in
+            ( model
+            , Cmd.none
+            )
+
+        GetQuestions res ->
+            ( model, Cmd.none )
 
 
-main : Program () Model Msg
+main : Program Flags Model Msg
 main =
-    Browser.sandbox
+    Browser.element
         { init = init
         , view = view
         , update = update
+        , subscriptions = always Sub.none
         }
-
-
-
--- init.questions
---     |> List.map View.Question.view
---     |> String.join ", "
---     |> text
